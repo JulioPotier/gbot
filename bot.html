@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GBot</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse at 50% 42%, #f4f6f8 0%, #e4e7ec 72%, #d9dee5 100%);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #334155;
+    }
+
+    .page-title {
+      margin: 0 0 8px;
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #1e293b;
+      text-align: center;
+    }
+
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      width: 100%;
+    }
+
+    .demo-lead {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .demo-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 720px;
+    }
+
+    .demo-actions button {
+      border: 1px solid #c5d0dc;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .demo-actions button:hover {
+      background: #f8fafc;
+      border-color: #9fb0c3;
+    }
+
+    .demo-actions button:active {
+      transform: scale(0.97);
+    }
+
+    .demo-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      width: min(720px, 94vw);
+    }
+
+    .demo-code {
+      margin: 0;
+      padding: 14px 16px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-x: auto;
+      border: 1px solid #334155;
+    }
+
+    .demo-code[hidden] {
+      display: none;
+    }
+
+    .demo-code .tok-keyword {
+      color: #7dd3fc;
+    }
+
+    .demo-code .tok-fn {
+      color: #fbbf24;
+    }
+
+    .demo-code .tok-string {
+      color: #86efac;
+    }
+
+    .demo-code .tok-comment {
+      color: #94a3b8;
+    }
+
+    .demo-code .tok-prop {
+      color: #c4b5fd;
+    }
+
+    .bot-tuning {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(320px, 92vw);
+      padding: 4px 2px 0;
+    }
+
+    .tuning-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 1.4fr);
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #3d4f63;
+      cursor: default;
+    }
+
+    .tuning-label {
+      font-weight: 600;
+    }
+
+    .tuning-row input[type="range"] {
+      width: 100%;
+      accent-color: #5aa6db;
+      cursor: pointer;
+    }
+
+    .app-footer {
+      margin-top: auto;
+      padding: 8px 0 4px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      color: #94a3b8;
+    }
+
+    .bot-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .bot-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bot-canvas-wrap {
+      width: 168px;
+      height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      flex-shrink: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 168px;
+      height: 168px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transform-origin: center center;
+    }
+
+    .status {
+      position: relative;
+      width: min(260px, 46vw);
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: #334155;
+      background: #fff;
+      border: 1px solid #c5d0dc;
+      border-radius: 18px;
+      box-shadow:
+        0 2px 10px rgba(30, 40, 55, 0.07),
+        0 1px 2px rgba(30, 40, 55, 0.04);
+      min-height: 2.9em;
+    }
+
+    .status::before {
+      content: "";
+      position: absolute;
+      left: -11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 9px solid transparent;
+      border-bottom: 9px solid transparent;
+      border-right: 11px solid #c5d0dc;
+    }
+
+    .status::after {
+      content: "";
+      position: absolute;
+      left: -9px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-right: 9px solid #fff;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 560px;
+    }
+
+    .controls button {
+      border: 1px solid #c5d0dc;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .controls button:hover {
+      background: #f8fafc;
+      border-color: #9fb0c3;
+    }
+
+    .controls button:active {
+      transform: scale(0.97);
+    }
+
+    .controls button[aria-pressed="true"] {
+      background: #e8f3fc;
+      border-color: #5aa6db;
+      color: #1d4f78;
+    }
+
+    .color-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      max-width: 640px;
+    }
+
+    .style-picker select {
+      border: 1px solid #c5d0dc;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .effect-3d {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      color: #3d4f63;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .effect-3d input {
+      width: 16px;
+      height: 16px;
+      accent-color: #5aa6db;
+      cursor: pointer;
+    }
+
+    .colors {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .color-chip {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      background: var(--chip);
+      box-shadow: 0 1px 3px rgba(30, 40, 55, 0.22);
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+    .color-chip:hover {
+      transform: scale(1.08);
+    }
+
+    .color-chip:active {
+      transform: scale(0.96);
+    }
+
+    .color-chip[aria-pressed="true"] {
+      box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px #5aa6db;
+    }
+
+    .accessories {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 560px;
+    }
+
+    .accessory-chip {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border: 1px solid #c5d0dc;
+      border-radius: 50%;
+      background: #fff;
+      font-size: 21px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .accessory-chip:hover {
+      background: #f8fafc;
+      border-color: #9fb0c3;
+    }
+
+    .accessory-chip:active {
+      transform: scale(0.95);
+    }
+
+    .accessory-chip[aria-pressed="true"] {
+      background: #e8f3fc;
+      border-color: #5aa6db;
+      box-shadow: 0 0 0 2px rgba(90, 166, 219, 0.25);
+    }
+
+    .shapes {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 560px;
+    }
+
+    .shape-chip {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 1px solid #c5d0dc;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .shape-chip:hover {
+      background: #f8fafc;
+      border-color: #9fb0c3;
+    }
+
+    .shape-chip[aria-pressed="true"] {
+      background: #e8f3fc;
+      border-color: #5aa6db;
+      box-shadow: 0 0 0 2px rgba(90, 166, 219, 0.25);
+    }
+
+    .shape-chip:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .shape-chip:disabled:hover {
+      background: #fff;
+      border-color: #c5d0dc;
+    }
+
+    .shape-glyph {
+      display: block;
+      background: #4f9ede;
+    }
+
+    .shape-glyph--round {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+    }
+
+    .shape-glyph--square {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+    }
+
+    .shape-glyph--triangle {
+      width: 0;
+      height: 0;
+      background: transparent;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 16px solid #4f9ede;
+    }
+
+    .shape-glyph--house {
+      width: 16px;
+      height: 16px;
+      background: transparent;
+      position: relative;
+    }
+
+    .shape-glyph--house::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      bottom: 0;
+      width: 12px;
+      height: 10px;
+      background: #4f9ede;
+      border-radius: 1px;
+    }
+
+    .shape-glyph--house::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 5px solid #4f9ede;
+    }
+
+    .shape-glyph--hexagon {
+      width: 18px;
+      height: 16px;
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+
+    .shape-glyph--pill {
+      width: 14px;
+      height: 20px;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Custom Gbot</h1>
+  <div class="stage">
+    <div class="bot-row">
+      <div class="bot-column">
+        <div class="bot-canvas-wrap">
+          <canvas id="bot" aria-label="Interactive GBot"></canvas>
+        </div>
+      </div>
+      <p id="status" class="status" aria-live="polite">I'm watching you.</p>
+    </div>
+    <div class="color-bar">
+      <label class="style-picker">
+        <select id="color-style" aria-label="Color style">
+          <option value="vibrant" selected>Vibrant</option>
+          <option value="pastel">Pastel</option>
+          <option value="normal">Normal</option>
+        </select>
+      </label>
+      <div class="colors" role="toolbar" aria-label="Bot color">
+        <button type="button" class="color-chip" data-color="blue" aria-label="Blue" aria-pressed="true"></button>
+        <button type="button" class="color-chip" data-color="yellow" aria-label="Yellow" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="red" aria-label="Red" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="green" aria-label="Green" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="orange" aria-label="Orange" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="violet" aria-label="Violet" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="gray" aria-label="Gray" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="pink" aria-label="Pink" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="cyan" aria-label="Cyan" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="peach" aria-label="Peach" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="mint" aria-label="Mint" aria-pressed="false"></button>
+        <button type="button" class="color-chip" data-color="coral" aria-label="Coral" aria-pressed="false"></button>
+      </div>
+      <label class="effect-3d">
+        <input type="checkbox" id="effect-3d">
+        3D effect
+      </label>
+    </div>
+    <div class="shapes" role="toolbar" aria-label="Bot shape">
+      <button type="button" class="shape-chip" data-shape="round" aria-label="Round" aria-pressed="true"><span class="shape-glyph shape-glyph--round"></span></button>
+      <button type="button" class="shape-chip" data-shape="square" aria-label="Square" aria-pressed="false"><span class="shape-glyph shape-glyph--square"></span></button>
+      <button type="button" class="shape-chip" data-shape="triangle" aria-label="Triangle" aria-pressed="false"><span class="shape-glyph shape-glyph--triangle"></span></button>
+      <button type="button" class="shape-chip" data-shape="hexagon" aria-label="Hexagon" aria-pressed="false"><span class="shape-glyph shape-glyph--hexagon"></span></button>
+      <button type="button" class="shape-chip" data-shape="pill" aria-label="Pill" aria-pressed="false"><span class="shape-glyph shape-glyph--pill"></span></button>
+    </div>
+    <!--
+    <div class="accessories" role="toolbar" aria-label="Bot accessories">
+      <button type="button" class="accessory-chip" data-accessory="glasses" aria-label="Glasses" aria-pressed="false">👓</button>
+      <button type="button" class="accessory-chip" data-accessory="hat" aria-label="Hat" aria-pressed="false">🎩</button>
+      <button type="button" class="accessory-chip" data-accessory="magnify" aria-label="Magnifying glass" aria-pressed="false">🔍</button>
+      <button type="button" class="accessory-chip" data-accessory="coffee" aria-label="Coffee cup" aria-pressed="false">☕</button>
+      <button type="button" class="accessory-chip" data-accessory="joystick" aria-label="Joystick" aria-pressed="false">🕹️</button>
+      <button type="button" class="accessory-chip" data-accessory="star" aria-label="Star" aria-pressed="false">⭐</button>
+      <button type="button" class="accessory-chip" data-accessory="book" aria-label="Book" aria-pressed="false">📖</button>
+      <button type="button" class="accessory-chip" data-accessory="hammer" aria-label="Hammer" aria-pressed="false">🔨</button>
+    </div>
+    <div class="controls" role="toolbar" aria-label="Bot moods">
+      <button type="button" data-mode="search">🔍 Search</button>
+      <button type="button" data-mode="work">🔨 Work</button>
+      <button type="button" data-mode="think">☕ Think</button>
+      <button type="button" data-mode="read">📖 Read</button>
+      <button type="button" data-mode="play">🕹️ Play</button>
+      <button type="button" data-mode="happy">🎩 Happy</button>
+      <button type="button" data-mode="struggle">⭐ Struggle</button>
+      <button type="button" data-mode="rest">💤 Rest</button>
+      <button type="button" data-mode="chat">💬 Chat</button>
+      <button type="button" data-mode="focus">🎯 Focus</button>
+      <button type="button" data-mode="pride">🎉 Pride</button>
+    </div>
+    -->
+    <div class="bot-tuning" aria-label="Bot display settings">
+      <label class="tuning-row">
+        <span class="tuning-label">Overall size</span>
+        <input type="range" id="bot-zoom" min="50" max="140" value="100" step="1" aria-valuemin="50" aria-valuemax="140" aria-valuenow="100">
+      </label>
+      <label class="tuning-row">
+        <span class="tuning-label">Face size</span>
+        <input type="range" id="face-size" min="9" max="28" value="21" step="1" aria-valuemin="9" aria-valuemax="28" aria-valuenow="21">
+      </label>
+    </div>
+    <div class="demo-panel">
+      <p class="demo-lead">Real-world <code>Gbot</code> API examples — click a scenario to run it and see the code.</p>
+      <div class="demo-actions">
+        <button type="button" data-demo-id="search">🔍 Search files</button>
+        <button type="button" data-demo-id="work">🔨 Ajax / work</button>
+        <button type="button" data-demo-id="think">☕ Think</button>
+        <button type="button" data-demo-id="read">📖 Read docs</button>
+        <button type="button" data-demo-id="play">🕹️ Play break</button>
+        <button type="button" data-demo-id="happy">🎩 Happy</button>
+        <button type="button" data-demo-id="struggle">⭐ Struggle</button>
+        <button type="button" data-demo-id="rest">💤 Rest</button>
+        <button type="button" data-demo-id="chat">💬 Chat</button>
+        <button type="button" data-demo-id="focus">🎯 Focus</button>
+        <button type="button" data-demo-id="pride">🎉 Pride</button>
+      </div>
+      <pre class="demo-code" id="demo-code" hidden><code id="demo-code-inner"></code></pre>
+    </div>
+  </div>
+  <footer class="app-footer">version 0.8.0</footer>
+  <script src="gbot.js"></script>
+  <script>
+    Gbot.init({
+      colorStyle: "vibrant",
+      color: "blue",
+      effect3d: false,
+      shape: "round",
+      zoom: 100,
+      faceSize: 21,
+      welcomePhrase: "I'm watching you."
+    });
+
+    const demoCodeEl = document.getElementById("demo-code");
+    const demoCodeInner = document.getElementById("demo-code-inner");
+
+    let demoTimers = [];
+
+    function clearDemoTimers() {
+      demoTimers.forEach((id) => clearTimeout(id));
+      demoTimers = [];
+    }
+
+    function schedule(fn, ms) {
+      demoTimers.push(setTimeout(fn, ms));
+    }
+
+    const DEMO_SNIPPETS = {
+      search: `// User runs a file search in your app
+Gbot.setMode("search", { phrase: "Searching the repository…" });
+
+setTimeout(() => {
+  Gbot.setMode("search", { phrase: "Scanning src/ and docs/…" });
+}, 2200);
+
+setTimeout(() => {
+  Gbot.setMode("chat", {
+    phrase: "Found 3 matches in backup.sql."
+  });
+}, 4800);`,
+      work: `// Ajax: work while loading, chat with the HTTP status
+Gbot.setMode("work", { phrase: "Sending request to google.com…" });
+
+fetch("https://www.google.com", { method: "HEAD" })
+  .then((response) => {
+    Gbot.setMode("chat", {
+      phrase: \`Google response: HTTP \${response.status}.\`
+    });
+  })
+  .catch((error) => {
+    Gbot.setMode("chat", {
+      phrase: \`Blocked by CORS: \${error.message}\`
+    });
+  });`,
+      think: `Gbot.setMode("think", { phrase: "Comparing database options…" });
+
+setTimeout(() => {
+  Gbot.setMode("think", { phrase: "Redis vs Postgres for this workload…" });
+}, 2500);
+
+setTimeout(() => {
+  Gbot.setMode("happy", {
+    duration: 4500,
+    phrase: "Decision made — Postgres it is."
+  });
+}, 5500);`,
+      read: `Gbot.setMode("read", { phrase: "Opening API guide, chapter 4…" });
+
+setTimeout(() => {
+  Gbot.setMode("read", { phrase: "Pagination section — almost done…" });
+}, 2800);
+
+setTimeout(() => {
+  Gbot.setMode("chat", { phrase: "Finished reading — ready to implement." });
+}, 5600);`,
+      play: `// Reward after a long task
+Gbot.setMode("play", {
+  duration: 5500,
+  phrase: "Quick break — one round!"
+});`,
+      happy: `Gbot.setMode("work", { phrase: "Running CI pipeline…" });
+
+setTimeout(() => {
+  Gbot.setMode("happy", {
+    duration: 5000,
+    phrase: "All checks passed — ship it!"
+  });
+}, 3200);`,
+      struggle: `// Hard bug or failed validation
+Gbot.setMode("struggle", {
+  duration: 5000,
+  phrase: "This regex edge case is nasty…"
+});`,
+      rest: `Gbot.setMode("focus", { phrase: "Deep work session in progress…" });
+
+setTimeout(() => {
+  Gbot.setMode("rest", {
+    duration: 6000,
+    phrase: "Stepping away for a short break."
+  });
+}, 3000);`,
+      chat: `Gbot.setMode("chat", { phrase: "Onboarding checklist:" });
+
+setTimeout(() => {
+  Gbot.setMode("chat", { phrase: "1) Clone repo  2) npm install" });
+}, 1800);
+
+setTimeout(() => {
+  Gbot.setMode("chat", {
+    phrase: "3) Copy .env.example — ask if you get stuck."
+  });
+}, 3600);`,
+      focus: `Gbot.setMode("focus", { phrase: "Focus block: unit tests…" });
+
+setTimeout(() => {
+  Gbot.setMode("chat", { phrase: "Focus block done — 12 tests added." });
+}, 5000);`,
+      pride: `Gbot.setMode("work", { phrase: "Publishing release v1.0…" });
+
+setTimeout(() => {
+  Gbot.setMode("pride", {
+    duration: 6500,
+    phrase: "v1.0 is live — great teamwork!"
+  });
+}, 3500);`
+    };
+
+    const DEMO_RUNNERS = {
+      search() {
+        Gbot.setMode("search", { phrase: "Searching the repository…" });
+        schedule(() => {
+          Gbot.setMode("search", { phrase: "Scanning src/ and docs/…" });
+        }, 2200);
+        schedule(() => {
+          Gbot.setMode("chat", { phrase: "Found 3 matches in backup.sql." });
+        }, 4800);
+      },
+      work() {
+        Gbot.setMode("work", { phrase: "Sending request to google.com…" });
+        fetch("https://www.google.com", {
+          method: "HEAD",
+          cache: "no-store",
+          redirect: "follow"
+        })
+          .then((response) => {
+            Gbot.setMode("chat", {
+              phrase: `Google response: HTTP ${response.status}.`
+            });
+          })
+          .catch((error) => {
+            Gbot.setMode("chat", {
+              phrase: `Request blocked (CORS): ${error.message}`
+            });
+          });
+      },
+      think() {
+        Gbot.setMode("think", { phrase: "Comparing database options…" });
+        schedule(() => {
+          Gbot.setMode("think", { phrase: "Redis vs Postgres for this workload…" });
+        }, 2500);
+        schedule(() => {
+          Gbot.setMode("happy", {
+            duration: 4500,
+            phrase: "Decision made — Postgres it is."
+          });
+        }, 5500);
+      },
+      read() {
+        Gbot.setMode("read", { phrase: "Opening API guide, chapter 4…" });
+        schedule(() => {
+          Gbot.setMode("read", { phrase: "Pagination section — almost done…" });
+        }, 2800);
+        schedule(() => {
+          Gbot.setMode("chat", { phrase: "Finished reading — ready to implement." });
+        }, 5600);
+      },
+      play() {
+        Gbot.setMode("play", {
+          duration: 5500,
+          phrase: "Quick break — one round!"
+        });
+      },
+      happy() {
+        Gbot.setMode("work", { phrase: "Running CI pipeline…" });
+        schedule(() => {
+          Gbot.setMode("happy", {
+            duration: 5000,
+            phrase: "All checks passed — ship it!"
+          });
+        }, 3200);
+      },
+      struggle() {
+        Gbot.setMode("struggle", {
+          duration: 5000,
+          phrase: "This regex edge case is nasty…"
+        });
+      },
+      rest() {
+        Gbot.setMode("focus", { phrase: "Deep work session in progress…" });
+        schedule(() => {
+          Gbot.setMode("rest", {
+            duration: 6000,
+            phrase: "Stepping away for a short break."
+          });
+        }, 3000);
+      },
+      chat() {
+        Gbot.setMode("chat", { phrase: "Onboarding checklist:" });
+        schedule(() => {
+          Gbot.setMode("chat", { phrase: "1) Clone repo  2) npm install" });
+        }, 1800);
+        schedule(() => {
+          Gbot.setMode("chat", {
+            phrase: "3) Copy .env.example — ask if you get stuck."
+          });
+        }, 3600);
+      },
+      focus() {
+        Gbot.setMode("focus", { phrase: "Focus block: unit tests…" });
+        schedule(() => {
+          Gbot.setMode("chat", { phrase: "Focus block done — 12 tests added." });
+        }, 5000);
+      },
+      pride() {
+        Gbot.setMode("work", { phrase: "Publishing release v1.0…" });
+        schedule(() => {
+          Gbot.setMode("pride", {
+            duration: 6500,
+            phrase: "v1.0 is live — great teamwork!"
+          });
+        }, 3500);
+      }
+    };
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function highlightJavaScript(source) {
+      let html = escapeHtml(source);
+      html = html.replace(/(\/\/.*$)/gm, '<span class="tok-comment">$1</span>');
+      html = html.replace(/("(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/g, '<span class="tok-string">$1</span>');
+      html = html.replace(/\b(const|let|function|return|new|if|catch|then|setTimeout)\b/g, '<span class="tok-keyword">$1</span>');
+      html = html.replace(/\b(Gbot|fetch)\b/g, '<span class="tok-fn">$1</span>');
+      html = html.replace(/\b(duration|phrase|method|cache|redirect)\b/g, '<span class="tok-prop">$1</span>');
+      return html;
+    }
+
+    function showDemoCode(key) {
+      const snippet = DEMO_SNIPPETS[key];
+      if (!snippet) return;
+      demoCodeInner.innerHTML = highlightJavaScript(snippet);
+      demoCodeEl.hidden = false;
+    }
+
+    document.querySelectorAll("[data-demo-id]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = button.dataset.demoId;
+        clearDemoTimers();
+        showDemoCode(id);
+        const run = DEMO_RUNNERS[id];
+        if (run) run();
+      });
+    });
+  </script>
+</body>
+</html>

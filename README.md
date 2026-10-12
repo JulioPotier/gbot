@@ -6,7 +6,7 @@
 
 The interactive playground lives in `[bot.html](bot.html)` (title: **Custom Gbot**). The library itself is a single file: `[gbot.js](gbot.js)`.
 
-**Current version:** `0.8.2`
+**Current version:** `0.8.1`
 
 ## Features
 
